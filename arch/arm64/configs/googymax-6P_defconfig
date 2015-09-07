@@ -1,6 +1,6 @@
 ##### GOOGYMAX #####
 
-CONFIG_LOCALVERSION="-GoogyMax-6P-v1.1-b1"
+CONFIG_LOCALVERSION="-GoogyMax-6P-MM-v1.1"
 # CONFIG_LOCALVERSION_AUTO is not set
 # CONFIG_ZRAM is not set
 # CONFIG_ZSMALLOC is not set

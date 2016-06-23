@@ -1,0 +1,9 @@
+ / {
+        huawei_fac_info {
+                  compatible = "huawei,hw_fac_info";
+                  fac,product_name = "HUAWEI Launch Box";
+                  fac,hardware_ver = "LAUNCHBOX";
+                  fac,software_ver = "MSM8994_LAUNCH_BOX_VA";
+                  status = "ok";
+        };
+};

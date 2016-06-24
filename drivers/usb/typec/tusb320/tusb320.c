@@ -668,6 +668,7 @@ static void tusb320_wdog_work(struct work_struct *w)
 	struct tusb320_device_info *di = g_tusb320_dev;
 	int ret = 0;
 	bool work = 0;
+	int ggy_clean_retry_count = 0;
 
 	pr_err("%s: start\n", __func__);
 
@@ -675,8 +676,8 @@ static void tusb320_wdog_work(struct work_struct *w)
 	if (di->clean_failded) {
 		pr_err("%s: clean interrupt mask\n", __func__);
 		ret = tusb320_int_clear();
-		if (ret < 0
-		    && di->clean_retry_count < TUSB320_IRQ_CLEAN_MAX_RETRY) {
+		ggy_clean_retry_count = di->clean_retry_count;
+		if (ret < 0 && ggy_clean_retry_count < TUSB320_IRQ_CLEAN_MAX_RETRY) {
 			pr_err("%s: clean interrupt mask error\n", __func__);
 			work = 1;
 			di->clean_retry_count++;

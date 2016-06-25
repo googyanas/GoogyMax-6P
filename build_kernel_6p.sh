@@ -22,10 +22,10 @@ cd /home/anas/Nexus_6P/Out
 ./packimg.sh
 
 cd /home/anas/Nexus_6P/Release
-zip -r ../GoogyMax-6P_Kernel_${1}.zip .
+zip -r ../GoogyMax-6P_Kernel_v${1}.zip .
 
-adb push /home/anas/Nexus_6P/GoogyMax-6P_Kernel_${1}.zip /sdcard/GoogyMax-6P_Kernel_${1}.zip
+adb push /home/anas/Nexus_6P/GoogyMax-6P_Kernel_v${1}.zip /sdcard/GoogyMax-6P_Kernel_v${1}.zip
 
 adb kill-server
 
-echo "GoogyMax-6P_Kernel_${1}.zip READY !"
+echo "GoogyMax-6P_Kernel_v${1}.zip READY !"

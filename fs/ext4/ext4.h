@@ -2120,14 +2120,16 @@ extern struct kmem_cache *ext4_crypt_info_cachep;
 bool ext4_valid_contents_enc_mode(uint32_t mode);
 uint32_t ext4_validate_encryption_key_size(uint32_t mode, uint32_t size);
 extern struct workqueue_struct *ext4_read_workqueue;
-struct ext4_crypto_ctx *ext4_get_crypto_ctx(struct inode *inode);
+struct ext4_crypto_ctx *ext4_get_crypto_ctx(struct inode *inode,
+					    gfp_t gfp_flags);
 void ext4_release_crypto_ctx(struct ext4_crypto_ctx *ctx);
 void ext4_restore_control_page(struct page *data_page);
 struct page *ext4_encrypt(struct inode *inode,
-			  struct page *plaintext_page);
-int ext4_decrypt(struct ext4_crypto_ctx *ctx, struct page *page);
-int ext4_decrypt_one(struct inode *inode, struct page *page);
+			  struct page *plaintext_page,
+			  gfp_t gfp_flags);
+int ext4_decrypt(struct page *page);
 int ext4_encrypted_zeroout(struct inode *inode, struct ext4_extent *ex);
+extern const struct dentry_operations ext4_encrypted_d_ops;
 
 #ifdef CONFIG_EXT4_FS_ENCRYPTION
 int ext4_init_crypto(void);
@@ -2862,8 +2864,7 @@ extern int ext4_da_write_inline_data_end(struct inode *inode, loff_t pos,
 					 struct page *page);
 extern int ext4_try_add_inline_entry(handle_t *handle,
 				     struct ext4_filename *fname,
-				     struct dentry *dentry,
-				     struct inode *inode);
+				     struct inode *dir, struct inode *inode);
 extern int ext4_try_create_inline_dir(handle_t *handle,
 				      struct inode *parent,
 				      struct inode *inode);
@@ -3100,5 +3101,8 @@ extern int ext4_resize_begin(struct super_block *sb);
 extern void ext4_resize_end(struct super_block *sb);
 
 #endif	/* __KERNEL__ */
+
+#define EFSBADCRC	EBADMSG		/* Bad CRC detected */
+#define EFSCORRUPTED	EUCLEAN		/* Filesystem is corrupted */
 
 #endif	/* _EXT4_H */

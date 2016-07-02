@@ -16,9 +16,9 @@ make googymax-6P_defconfig || exit 1
 
 make -j3 || exit 1
 
-./tools/dtbtool3 -o /home/anas/Nexus_6P/Out/dt.img -s 4096 -p ./scripts/dtc/ arch/arm64/boot/dts/ || exit 1
+./tools/dtbtool3 -o /home/anas/Nexus_6P/Out_n/dt.img -s 4096 -p ./scripts/dtc/ arch/arm64/boot/dts/ || exit 1
 
-cd /home/anas/Nexus_6P/Out
+cd /home/anas/Nexus_6P/Out_n
 ./packimg.sh
 
 cd /home/anas/Nexus_6P/Release

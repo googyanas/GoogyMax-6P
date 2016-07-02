@@ -67,11 +67,14 @@ struct snd_compr_file {
 
 /*
  * a note on stream states used:
- * we use follwing states in the compressed core
+ * we use following states in the compressed core
  * SNDRV_PCM_STATE_OPEN: When stream has been opened.
  * SNDRV_PCM_STATE_SETUP: When stream has been initialized. This is done by
  *	calling SNDRV_COMPRESS_SET_PARAMS. running streams will come to this
  *	state at stop by calling SNDRV_COMPRESS_STOP, or at end of drain.
+ * SNDRV_PCM_STATE_PREPARED: When snd_compr_write() has been called in
+ *  SNDRV_PCM_STATE_SETUP state. SNDRV_COMPRESS_START can only be called in
+ *  SNDRV_PCM_STATE_PREPARED state.
  * SNDRV_PCM_STATE_RUNNING: When stream has been started and is
  *	decoding/encoding and rendering/capturing data.
  * SNDRV_PCM_STATE_DRAINING: When stream is draining current data. This is done
@@ -175,7 +178,7 @@ static int snd_compr_update_tstamp(struct snd_compr_stream *stream,
 	err = stream->ops->pointer(stream, tstamp);
 	if (err)
 		return err;
-	pr_debug("dsp consumed till %d total %d bytes\n",
+	pr_debug("dsp consumed till %d total %llu bytes\n",
 		tstamp->byte_offset, tstamp->copied_total);
 	if (stream->direction == SND_COMPRESS_PLAYBACK)
 		stream->runtime->total_bytes_transferred = tstamp->copied_total;
@@ -288,6 +291,7 @@ static ssize_t snd_compr_write(struct file *f, const char __user *buf,
 	mutex_lock(&stream->device->lock);
 	/* write is allowed when stream is running or has been steup */
 	if (stream->runtime->state != SNDRV_PCM_STATE_SETUP &&
+	    stream->runtime->state != SNDRV_PCM_STATE_PREPARED &&
 			stream->runtime->state != SNDRV_PCM_STATE_RUNNING) {
 		mutex_unlock(&stream->device->lock);
 		return -EBADFD;

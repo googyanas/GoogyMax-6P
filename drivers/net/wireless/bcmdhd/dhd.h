@@ -371,7 +371,7 @@ typedef struct dhd_pub {
 	bool tdls_enable;
 #endif
 	struct reorder_info *reorder_bufs[WLHOST_REORDERDATA_MAXFLOWS];
-	char  fw_capabilities[WLC_IOCTL_SMLEN];
+	char  fw_capabilities[WLC_IOCTL_MEDLEN];
 	#define MAXSKBPEND 1024
 	void *skbbuf[MAXSKBPEND];
 	uint32 store_idx;
@@ -425,10 +425,22 @@ typedef struct dhd_pub {
 #ifdef GSCAN_SUPPORT
 	bool lazy_roam_enable;
 #endif /* GSCAN_SUPPORT */
+#if defined(PKT_FILTER_SUPPORT) && defined(APF)
+	bool apf_set;
+#endif /* PKT_FILTER_SUPPORT && APF */
 	uint8 *soc_ram;
 	uint32 soc_ram_length;
 	uint32 memdump_enabled;
 	uint8 rand_mac_oui[DOT11_OUI_LEN];
+#ifdef DBG_PKT_MON
+	bool d11_tx_status;
+#endif /* DBG_PKT_MON */
+	uint16 ndo_version;		/* ND offload version supported */
+#ifdef NDO_CONFIG_SUPPORT
+	bool ndo_enable;		/* ND offload feature enable */
+	bool ndo_host_ip_overflow;	/* # of host ip addr exceed FW capacity */
+	uint32 ndo_max_host_ip;		/* # of host ip addr supported by FW */
+#endif /* NDO_CONFIG_SUPPORT */
 } dhd_pub_t;
 
 typedef struct {
@@ -669,13 +681,23 @@ extern void dhd_txcomplete(dhd_pub_t *dhdp, void *txp, bool success);
 #define WIFI_FEATURE_AP_STA             0x8000      /* Support for AP STA Concurrency   */
 #define WIFI_FEATURE_LINKSTAT           0x10000     /* Support for Linkstats            */
 #define WIFI_FEATURE_HAL_EPNO           0x40000     /* WiFi PNO enhanced                */
-#define WIFI_FEATUE_RSSI_MONITOR        0x80000     /* RSSI Monitor                     */
+#define WIFI_FEATURE_RSSI_MONITOR       0x80000     /* RSSI Monitor                     */
+#define WIFI_FEATURE_CONFIG_NDO         0x200000    /* ND offload configure             */
 
 #define MAX_FEATURE_SET_CONCURRRENT_GROUPS  3
 
 extern int dhd_dev_get_feature_set(struct net_device *dev);
 extern int *dhd_dev_get_feature_set_matrix(struct net_device *dev, int *num);
 extern int dhd_dev_set_nodfs(struct net_device *dev, u32 nodfs);
+
+#ifdef NDO_CONFIG_SUPPORT
+#ifndef NDO_MAX_HOST_IP_ENTRIES
+#define NDO_MAX_HOST_IP_ENTRIES	10
+#endif /* NDO_MAX_HOST_IP_ENTRIES */
+extern int dhd_dev_ndo_cfg(struct net_device *dev, u8 enable);
+extern int dhd_dev_ndo_update_inet6addr(struct net_device * dev);
+#endif /* NDO_CONFIG_SUPPORT */
+
 extern int dhd_dev_cfg_rand_mac_oui(struct net_device *dev, uint8 *oui);
 extern int dhd_set_rand_mac_oui(dhd_pub_t *dhd);
 
@@ -804,6 +826,27 @@ extern int dhd_dev_start_mkeep_alive(dhd_pub_t *dhd_pub, u8 mkeep_alive_id, u8 *
 	u16 ip_pkt_len, u8* src_mac_addr, u8* dst_mac_addr, u32 period_msec);
 extern int dhd_dev_stop_mkeep_alive(dhd_pub_t *dhd_pub, u8 mkeep_alive_id);
 #endif /* defined(KEEP_ALIVE) */
+
+#if defined(PKT_FILTER_SUPPORT) && defined(APF)
+/*
+ * As per Google's current implementation, there will be only one APF filter.
+ * Therefore, userspace doesn't bother about filter id and because of that
+ * DHD has to manage the filter id.
+ */
+#define PKT_FILTER_APF_ID		200
+#define DHD_APF_LOCK(ndev)		dhd_apf_lock(ndev)
+#define DHD_APF_UNLOCK(ndev)	dhd_apf_unlock(ndev)
+
+extern void dhd_apf_lock(struct net_device *dev);
+extern void dhd_apf_unlock(struct net_device *dev);
+extern int dhd_dev_apf_get_version(struct net_device *ndev, uint32 *version);
+extern int dhd_dev_apf_get_max_len(struct net_device *ndev, uint32 *max_len);
+extern int dhd_dev_apf_add_filter(struct net_device *ndev, u8* program,
+	uint32 program_len);
+extern int dhd_dev_apf_enable_filter(struct net_device *ndev);
+extern int dhd_dev_apf_disable_filter(struct net_device *ndev);
+extern int dhd_dev_apf_delete_filter(struct net_device *ndev);
+#endif /* PKT_FILTER_SUPPORT && APF */
 
 extern void dhd_timeout_start(dhd_timeout_t *tmo, uint usec);
 extern int dhd_timeout_expired(dhd_timeout_t *tmo);
@@ -1110,10 +1153,19 @@ int dhd_tdls_enable(struct net_device *dev, bool tdls_on, bool auto_on, struct e
 void dhd_tdls_update_peer_info(struct net_device *dev, bool connect_disconnect, uint8 *addr);
 #endif /* PCIE_FULL_DONGLE */
 #endif /* WLTDLS */
+
 /* Neighbor Discovery Offload Support */
 int dhd_ndo_enable(dhd_pub_t * dhd, int ndo_enable);
 int dhd_ndo_add_ip(dhd_pub_t *dhd, char* ipaddr, int idx);
 int dhd_ndo_remove_ip(dhd_pub_t *dhd, int idx);
+
+/* Enhanced ND offload support */
+uint16 dhd_ndo_get_version(dhd_pub_t *dhdp);
+int dhd_ndo_add_ip_with_type(dhd_pub_t *dhdp, char *ipv6addr, uint8 type, int idx);
+int dhd_ndo_remove_ip_by_addr(dhd_pub_t *dhdp, char *ipv6addr, int idx);
+int dhd_ndo_remove_ip_by_type(dhd_pub_t *dhdp, uint8 type, int idx);
+int dhd_ndo_unsolicited_na_filter_enable(dhd_pub_t *dhdp, int enable);
+
 /* ioctl processing for nl80211 */
 int dhd_ioctl_process(dhd_pub_t *pub, int ifidx, struct dhd_ioctl *ioc, void *data_buf);
 

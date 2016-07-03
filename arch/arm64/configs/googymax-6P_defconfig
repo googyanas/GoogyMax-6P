@@ -7,6 +7,8 @@ CONFIG_LOCALVERSION="-GoogyMax-6P-v1.1-ndp4-b1"
 # CONFIG_ZRAM_DEBUG is not set
 # CONFIG_ZSMALLOC is not set
 CONFIG_CLEANCACHE=y
+CONFIG_KEXEC=y
+CONFIG_KEXEC_HARDBOOT=y
 
 ##################
 

@@ -3,7 +3,7 @@ export KERNELDIR=`readlink -f .`
 export PARENT_DIR=`readlink -f ..`
 export CROSS_COMPILE=/usr/bin/aarch64-linux-gnu-
 
-VER="\"-GoogyMax-6P-v$1\""
+VER="\"-GoogyMax-6P-N-v$1\""
 cp -f /home/anas/Nexus_6P/Kernel/arch/arm64/configs/googymax-6P_defconfig /home/anas/Nexus_6P/googymax-6P_defconfig
 sed "s#^CONFIG_LOCALVERSION=.*#CONFIG_LOCALVERSION=$VER#" /home/anas/Nexus_6P/googymax-6P_defconfig > /home/anas/Nexus_6P/Kernel/arch/arm64/configs/googymax-6P_defconfig
 
@@ -22,10 +22,10 @@ cd /home/anas/Nexus_6P/Out_n
 ./packimg.sh
 
 cd /home/anas/Nexus_6P/Release
-zip -r ../GoogyMax-6P_Kernel_v${1}.zip .
+zip -r ../GoogyMax-6P-N_Kernel_v${1}.zip .
 
-adb push /home/anas/Nexus_6P/GoogyMax-6P_Kernel_v${1}.zip /sdcard/GoogyMax-6P_Kernel_v${1}.zip
+adb push /home/anas/Nexus_6P/GoogyMax-6P-N_Kernel_v${1}.zip /sdcard/GoogyMax-6P-N_Kernel_v${1}.zip
 
 adb kill-server
 
-echo "GoogyMax-6P_Kernel_v${1}.zip READY !"
+echo "GoogyMax-6P-N_Kernel_v${1}.zip READY !"

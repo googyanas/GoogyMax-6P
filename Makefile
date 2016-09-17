@@ -379,7 +379,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Wno-format-security \
 		   -fno-delete-null-pointer-checks \
 		   -std=gnu89 \
-		   -mtune=cortex-a57.cortex-a53 -Wno-array-bounds -Wno-tautological-compare -Wno-misleading-indentation -Wno-maybe-uninitialized \
+		   -march=armv8-a+crypto -funsafe-math-optimizations -mtune=cortex-a57.cortex-a53 -Wno-array-bounds -Wno-tautological-compare -Wno-misleading-indentation -Wno-maybe-uninitialized \
                    -Wno-memset-transposed-args -Wno-discarded-array-qualifiers -Wno-logical-not-parentheses -Wno-array-bounds -Wno-switch -Wno-switch-bool -Wno-unused-variable
 
 KBUILD_AFLAGS_KERNEL :=

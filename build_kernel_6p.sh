@@ -15,7 +15,9 @@ rm -f /home/anas/Nexus_6P/Kernel/arch/arm64/boot/Image*.*
 rm -f /home/anas/Nexus_6P/Kernel/arch/arm64/boot/.Image*.*
 make googymax-6P_defconfig || exit 1
 
-make -j3 || exit 1
+cp -f /home/anas/Nexus_6P/selinuxfs_enforcing.c /home/anas/Nexus_6P/Kernel/security/selinux/selinuxfs.c
+
+make -j4 || exit 1
 
 ./tools/dtbtool3 -o /home/anas/Nexus_6P/Out_n/dt.img -s 4096 -p ./scripts/dtc/ arch/arm64/boot/dts/ || exit 1
 
@@ -23,10 +25,24 @@ cd /home/anas/Nexus_6P/Out_n
 ./packimg.sh
 
 cd /home/anas/Nexus_6P/Release
-zip -r ../GoogyMax-6P-N_Kernel_v${1}.zip .
+zip -r ../GoogyMax-6P-N_Kernel_v${1}_Enforcing.zip .
 
-adb push /home/anas/Nexus_6P/GoogyMax-6P-N_Kernel_v${1}.zip /sdcard/GoogyMax-6P-N_Kernel_v${1}.zip
+cd /home/anas/Nexus_6P/Kernel
+
+cp -f /home/anas/Nexus_6P/selinuxfs_permissive.c /home/anas/Nexus_6P/Kernel/security/selinux/selinuxfs.c
+
+make -j4 || exit 1
+
+./tools/dtbtool3 -o /home/anas/Nexus_6P/Out_n/dt.img -s 4096 -p ./scripts/dtc/ arch/arm64/boot/dts/ || exit 1
+
+cd /home/anas/Nexus_6P/Out_n
+./packimg.sh
+
+cd /home/anas/Nexus_6P/Release
+zip -r ../GoogyMax-6P-N_Kernel_v${1}_Permissive.zip .
+
+adb push /home/anas/Nexus_6P/GoogyMax-6P-N_Kernel_v${1}_Permissive.zip /sdcard/GoogyMax-6P-N_Kernel_v${1}_Permissive.zip
 
 adb kill-server
 
-echo "GoogyMax-6P-N_Kernel_v${1}.zip READY !"
+echo "GoogyMax-6P-N_Kernel_v${1} READY !"

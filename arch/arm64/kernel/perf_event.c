@@ -353,15 +353,23 @@ out:
 }
 
 static int
-validate_event(struct pmu_hw_events *hw_events,
-	       struct perf_event *event)
+validate_event(struct pmu *pmu, struct pmu_hw_events *hw_events,
+				struct perf_event *event)
 {
-	struct arm_pmu *armpmu = to_arm_pmu(event->pmu);
+	struct arm_pmu *armpmu;
 	struct hw_perf_event fake_event = event->hw;
 	struct pmu *leader_pmu = event->group_leader->pmu;
 
 	if (is_software_event(event))
 		return 1;
+
+	/*
+	 * Reject groups spanning multiple HW PMUs (e.g. CPU + CCI). The
+	 * core perf code won't check that the pmu->ctx == leader->ctx
+	 * until after pmu->event_init(event).
+	 */
+	if (event->pmu != pmu)
+		return 0;
 
 	if (event->pmu != leader_pmu || event->state < PERF_EVENT_STATE_OFF)
 		return 1;
@@ -369,6 +377,7 @@ validate_event(struct pmu_hw_events *hw_events,
 	if (event->state == PERF_EVENT_STATE_OFF && !event->attr.enable_on_exec)
 		return 1;
 
+	armpmu = to_arm_pmu(event->pmu);
 	return armpmu->get_event_idx(hw_events, &fake_event) >= 0;
 }
 
@@ -386,15 +395,15 @@ validate_group(struct perf_event *event)
 	memset(fake_used_mask, 0, sizeof(fake_used_mask));
 	fake_pmu.used_mask = fake_used_mask;
 
-	if (!validate_event(&fake_pmu, leader))
+	if (!validate_event(event->pmu, &fake_pmu, leader))
 		return -EINVAL;
 
 	list_for_each_entry(sibling, &leader->sibling_list, group_entry) {
-		if (!validate_event(&fake_pmu, sibling))
+		if (!validate_event(event->pmu, &fake_pmu, sibling))
 			return -EINVAL;
 	}
 
-	if (!validate_event(&fake_pmu, event))
+	if (!validate_event(event->pmu, &fake_pmu, event))
 		return -EINVAL;
 
 	return 0;
@@ -410,7 +419,9 @@ armpmu_disable_percpu_irq(void *data)
 static void
 armpmu_release_hardware(struct arm_pmu *armpmu)
 {
+	get_online_cpus();
 	armpmu->free_irq(armpmu);
+	put_online_cpus();
 }
 
 static void
@@ -431,13 +442,12 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
 		return -ENODEV;
 	}
 
-
+	get_online_cpus();
 	err = armpmu->request_irq(armpmu, armpmu->handle_irq);
-	if (err) {
+	if (err)
 		armpmu_release_hardware(armpmu);
-		return err;
-	}
-	return 0;
+	put_online_cpus();
+	return err;
 }
 
 static void
@@ -1069,6 +1079,7 @@ static int armv8pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
 		}
 
 		on_each_cpu(armpmu_enable_percpu_irq, &irq, 1);
+		cpu_pmu->percpu_irq_requested = true;
 	} else {
 		for (i = 0; i < irqs; ++i) {
 			err = 0;
@@ -1122,6 +1133,7 @@ static void armv8pmu_free_irq(struct arm_pmu *cpu_pmu)
 		if (msm_pmu_use_irq) {
 			on_each_cpu(armpmu_disable_percpu_irq, &irq, 1);
 			free_percpu_irq(irq, &cpu_hw_events);
+			cpu_pmu->percpu_irq_requested = false;
 		}
 	} else {
 		for (i = 0; i < irqs; ++i) {
@@ -1375,16 +1387,28 @@ static int __cpuinit cpu_pmu_notify(struct notifier_block *b,
 {
 	int cpu = (unsigned long)hcpu;
 	struct arm_pmu *pmu = container_of(b, struct arm_pmu, hotplug_nb);
-	if ((action & ~CPU_TASKS_FROZEN) != CPU_STARTING)
-		return NOTIFY_DONE;
-	if (!cpumask_test_cpu(cpu, cpu_online_mask))
-		return NOTIFY_DONE;
 
-	if (pmu->reset)
-		cpu_pmu->reset(pmu);
-	else
-		return NOTIFY_DONE;
-	return NOTIFY_OK;
+	switch (action & ~CPU_TASKS_FROZEN) {
+	case CPU_DOWN_PREPARE:
+		if (pmu->percpu_irq_requested) {
+			int irq = platform_get_irq(pmu->plat_device, 0);
+			smp_call_function_single(cpu,
+				armpmu_disable_percpu_irq, &irq, 1);
+		}
+		break;
+
+	case CPU_STARTING:
+	case CPU_DOWN_FAILED:
+		if (pmu->reset)
+			pmu->reset(pmu);
+		if (pmu->percpu_irq_requested) {
+			int irq = platform_get_irq(pmu->plat_device, 0);
+			smp_call_function_single(cpu,
+				armpmu_enable_percpu_irq, &irq, 1);
+		}
+		break;
+	}
+	return NOTIFY_DONE;
 }
 
 #ifdef CONFIG_CPU_PM

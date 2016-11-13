@@ -4,7 +4,7 @@ export PARENT_DIR=`readlink -f ..`
 # export CROSS_COMPILE=/usr/bin/aarch64-linux-gnu-
 export CROSS_COMPILE=/home/anas/Nexus_6P/toolchains/sabermod/bin/aarch64-
 
-VER="\"-GoogyMax-6P-N-v$1\""
+VER="\"-GoogyMax-6P-N-CM_v$1\""
 cp -f /home/anas/Nexus_6P/Kernel/arch/arm64/configs/googymax-6P_defconfig /home/anas/Nexus_6P/googymax-6P_defconfig
 sed "s#^CONFIG_LOCALVERSION=.*#CONFIG_LOCALVERSION=$VER#" /home/anas/Nexus_6P/googymax-6P_defconfig > /home/anas/Nexus_6P/Kernel/arch/arm64/configs/googymax-6P_defconfig
 
